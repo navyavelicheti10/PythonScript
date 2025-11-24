@@ -1,4 +1,4 @@
-name: Build, Test, SonarCloud, DAST Scan
+name: Build, Test, SonarCloud & ZAP
 
 on:
   push:
@@ -13,33 +13,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repository
-      - uses: actions/checkout@v4
+      # 1) Checkout repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Step 2: Setup Python
-      - uses: actions/setup-python@v5
+      # 2) Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # Step 3: Install dependencies
-      - run: |
+      # 3) Install dependencies
+      - name: Install Dependencies
+        run: |
           pip install coverage flask requests
 
-      # Step 4: Run Unit Tests with Coverage
+      # 4) Run Unit Tests with Coverage
       - name: Run Unit Tests
         run: |
           coverage run -m unittest discover -s src -p "test_*.py"
           coverage xml
 
-      # Step 5: Start the Python app in the background
-      - name: Start App
+      # 5) Start the Flask App in the background
+      - name: Start Flask App
         run: |
           nohup python src/main.py &
-          sleep 5  # wait for the app to start
+          sleep 5  # wait for app to start
 
-      # Step 6: SonarCloud Scan
+      # 6) SonarCloud Scan
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         with:
@@ -51,7 +54,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # Step 7: OWASP ZAP DAST Scan
+      # 7) OWASP ZAP DAST Scan
       - name: OWASP ZAP Scan
         uses: zaproxy/action-full-scan@v0.8.0
         with:
