@@ -16,7 +16,7 @@ jobs:
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         with:
-          args:>
+          args: >
              -Dsonar.projectKey=navyavelicheti10_PythonScript
              -Dsonar.organization=navyavelicheti10
              -Dsonar.sources=.
