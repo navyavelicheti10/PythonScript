@@ -13,41 +13,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # -----------------------------
       # 1) Checkout repository
-      # -----------------------------
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Needed for proper Sonar analysis
 
-      # -----------------------------
-      # 2) Setup Python for your tests
-      # -----------------------------
+      # 2) Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # -----------------------------
-      # 3) Install dependencies (if any)
-      # -----------------------------
+      # 3) Install dependencies (optional)
       - name: Install Dependencies
         run: |
-          pip install -r requirements.txt || true  # ignore if no file
+          pip install -r requirements.txt || true
           pip install coverage
 
-      # -----------------------------
-      # 4) Run unit tests
-      # -----------------------------
+      # 4) Run unit tests (discover tests in current directory)
       - name: Run Unit Tests
         run: |
-          coverage run -m unittest discover
+          coverage run -m unittest discover -s . -p "test_*.py"
           coverage xml
 
-      # -----------------------------
       # 5) SonarCloud Scan
-      # -----------------------------
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
         with:
