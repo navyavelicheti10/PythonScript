@@ -8,43 +8,27 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build-and-sonarqube:
-    name: Run Tests & SonarCloud Analysis
+  sonarqube:
+    name: Unit Tests + SonarQube
     runs-on: ubuntu-latest
 
     steps:
-      # 1) Checkout repository
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      # Step 1: Checkout repository
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0   # Required for SonarQube scan
 
-      # 2) Setup Python
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      # 3) Install dependencies
-      - name: Install Dependencies
+      # Step 2: Run Unit Tests with Coverage
+      - name: Run Unit Tests with Coverage
         run: |
-          pip install -r requirements.txt || true
-          pip install coverage
+          pip install pytest flask pytest-cov
+          python -m pytest src/test_main.py --cov=. --cov-report xml:coverage.xml
 
-      # 4) Run unit tests and generate coverage
-      - name: Run Unit Tests
-        run: |
-          coverage run -m unittest discover -s src -p "test_*.py"
-          coverage xml
-
-      # 5) SonarCloud Scan
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v6
-        with:
-          args: >
-            -Dsonar.projectKey=navyavelicheti10_PythonScript
-            -Dsonar.organization=navyavelicheti10
-            -Dsonar.sources=src
-            -Dsonar.python.coverage.reportPaths=coverage.xml
+      # Step 3: SonarQube Scan
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.python.coverage.reportPaths=coverage.xml
