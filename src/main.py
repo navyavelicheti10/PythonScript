@@ -35,5 +35,6 @@ def calculator():
         result = num1 / num2
         print("Result:", result)
 
-# Run the calculator
-calculator()
+# Only run the calculator when executed directly
+if __name__ == "__main__":
+    calculator()
