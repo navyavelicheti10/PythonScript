@@ -34,7 +34,7 @@ jobs:
       # 4) Run unit tests and generate coverage
       - name: Run Unit Tests
         run: |
-          coverage run -m unittest discover -s . -p "test_*.py"
+          coverage run -m unittest discover -s src -p "test_*.py"
           coverage xml
 
       # 5) SonarCloud Scan
@@ -44,7 +44,7 @@ jobs:
           args: >
             -Dsonar.projectKey=navyavelicheti10_PythonScript
             -Dsonar.organization=navyavelicheti10
-            -Dsonar.sources=.
+            -Dsonar.sources=src
             -Dsonar.python.coverage.reportPaths=coverage.xml
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
