@@ -25,7 +25,7 @@ jobs:
         with:
           python-version: "3.10"
 
-      # 3) Install dependencies (if you have any)
+      # 3) Install dependencies
       - name: Install Dependencies
         run: |
           pip install -r requirements.txt || true
