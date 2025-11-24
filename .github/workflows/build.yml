@@ -57,12 +57,12 @@ jobs:
 
       - name: OWASP ZAP Full Scan
         uses: zaproxy/action-full-scan@v0.8.0
-        continue-on-error: true   # prevent pipeline from failing
+        continue-on-error: true   # prevent pipeline failure on warnings
         with:
           target: "http://localhost:8000"
           output: "zap-report.html"
           format: "html"
-          publish-sarif: false    # prevents GitHub SARIF permissions error
+          publish-sarif: false    # avoid SARIF upload permission issue
 
       - name: Upload ZAP Report
         uses: actions/upload-artifact@v4
