@@ -1,40 +1,35 @@
-def calculator():
-    print("Simple Python Calculator")
-    print("------------------------")
-    print("Select an operation:")
-    print("1. Add")
-    print("2. Subtract")
-    print("3. Multiply")
-    print("4. Divide")
+# src/main.py
+from flask import Flask, request, jsonify
 
-    choice = input("Enter choice (1/2/3/4): ")
+app = Flask(__name__)
 
-    if choice not in ['1', '2', '3', '4']:
-        print("Invalid choice!")
-        return
-
-    num1 = float(input("Enter first number: "))
-    num2 = float(input("Enter second number: "))
-
-    if choice == '1':
-        result = num1 + num2
-        print("Result:", result)
-
-    elif choice == '2':
-        result = num1 - num2
-        print("Result:", result)
-
-    elif choice == '3':
-        result = num1 * num2
-        print("Result:", result)
-
-    elif choice == '4':
+def calculate(op, num1, num2):
+    if op == "add":
+        return num1 + num2
+    elif op == "subtract":
+        return num1 - num2
+    elif op == "multiply":
+        return num1 * num2
+    elif op == "divide":
         if num2 == 0:
-            print("Error: Cannot divide by zero!")
-            return
-        result = num1 / num2
-        print("Result:", result)
+            return None
+        return num1 / num2
+    else:
+        return None
 
-# Only run the calculator when executed directly
+@app.route("/calculate", methods=["GET"])
+def calculate_route():
+    op = request.args.get("op")
+    try:
+        num1 = float(request.args.get("num1"))
+        num2 = float(request.args.get("num2"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid numbers"}), 400
+
+    result = calculate(op, num1, num2)
+    if result is None:
+        return jsonify({"error": "Invalid operation or division by zero"}), 400
+    return jsonify({"result": result})
+
 if __name__ == "__main__":
-    calculator()
+    app.run(host="0.0.0.0", port=8000)
