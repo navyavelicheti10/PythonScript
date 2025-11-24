@@ -1,12 +1,8 @@
 name: Build, Test, SonarCloud & ZAP
 
 permissions:
-  actions: write
   contents: write
   security-events: write
-  pull-requests: write
-  pages: write
-  id-token: write
 
 on:
   push:
@@ -20,30 +16,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # 2️⃣ Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
+      # 3️⃣ Install dependencies
       - name: Install Dependencies
         run: |
           pip install flask coverage
 
+      # 4️⃣ Run unit tests and generate coverage
       - name: Run Unit Tests
         run: |
           coverage run -m unittest discover -s src -p "test_*.py"
           coverage xml
 
+      # 5️⃣ Start the app in background
       - name: Start App on Port 8000
         run: |
           nohup python src/main.py > app.log 2>&1 &
           sleep 5
 
+      # 6️⃣ SonarQube Scan
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
@@ -55,15 +57,16 @@ jobs:
             -Dsonar.sources=src
             -Dsonar.python.coverage.reportPaths=coverage.xml
 
+      # 7️⃣ OWASP ZAP Full Scan
       - name: OWASP ZAP Full Scan
         uses: zaproxy/action-full-scan@v0.8.0
-        continue-on-error: true   # prevent pipeline failure on warnings
+        continue-on-error: true   # do not fail pipeline on warnings
         with:
           target: "http://localhost:8000"
-          output: "zap-report.html"
-          format: "html"
-          publish-sarif: false    # avoid SARIF upload permission issue
+          artifact_name: "zap-report"
+          cmd_options: "-t http://localhost:8000 -r zap-report.html -I"
 
+      # 8️⃣ Upload ZAP report
       - name: Upload ZAP Report
         uses: actions/upload-artifact@v4
         with:
