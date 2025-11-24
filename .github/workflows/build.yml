@@ -1,10 +1,12 @@
 name: Build, Test, SonarCloud & ZAP
 
 permissions:
-  contents: write
-  pull-requests: write
-  security-events: write
   actions: write
+  contents: write
+  security-events: write
+  pull-requests: write
+  pages: write
+  id-token: write
 
 on:
   push:
@@ -15,41 +17,33 @@ on:
 
 jobs:
   build-and-scan:
-    name: Build + Test + SonarCloud + ZAP
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # 3. Install Dependencies
       - name: Install Dependencies
         run: |
           pip install flask coverage requests
 
-      # 4. Run Unit Tests with Coverage
       - name: Run Unit Tests
         run: |
           coverage run -m unittest discover -s src -p "test_*.py"
           coverage xml
 
-      # 5. Start Flask App on port 8000
       - name: Start Flask App
         run: |
           nohup python src/main.py > app.log 2>&1 &
           sleep 5
-          echo "App started on port 8000"
 
-      # 6. SonarCloud Scan
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         with:
@@ -61,10 +55,13 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # 7. OWASP ZAP DAST Scan
       - name: OWASP ZAP Scan
         uses: zaproxy/action-full-scan@v0.8.0
         with:
           target: "http://localhost:8000"
           output: "zap-report.html"
           format: "html"
+
+      - name: Upload ZAP Report
+        uses: actions/upload-artifact@v4
+        with:
