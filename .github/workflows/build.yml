@@ -39,7 +39,7 @@ jobs:
           coverage run -m unittest discover -s src -p "test_*.py"
           coverage xml
 
-      # 5️⃣ Start the app in background
+      # 5️⃣ Start the app in background on port 8000
       - name: Start App on Port 8000
         run: |
           nohup python src/main.py > app.log 2>&1 &
@@ -57,14 +57,14 @@ jobs:
             -Dsonar.sources=src
             -Dsonar.python.coverage.reportPaths=coverage.xml
 
-      # 7️⃣ OWASP ZAP Full Scan
+      # 7️⃣ OWASP ZAP Full Scan (fixed)
       - name: OWASP ZAP Full Scan
         uses: zaproxy/action-full-scan@v0.8.0
-        continue-on-error: true   # do not fail pipeline on warnings
+        continue-on-error: true
         with:
-          target: "http://localhost:8000"
+          target: "http://host.docker.internal:8000"
           artifact_name: "zap-report"
-          cmd_options: "-t http://localhost:8000 -r zap-report.html -I"
+          cmd_options: "-t http://host.docker.internal:8000 -r zap-report.html -I"
 
       # 8️⃣ Upload ZAP report
       - name: Upload ZAP Report
@@ -72,3 +72,4 @@ jobs:
         with:
           name: zap-report
           path: zap-report.html
+
