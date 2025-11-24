@@ -1,24 +1,60 @@
 name: Build
+
 on:
   push:
     branches:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
+
 jobs:
-  sonarqube:
-    name: SonarQube
+  build-and-sonarqube:
+    name: Run Tests & SonarCloud Analysis
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      # -----------------------------
+      # 1) Checkout repository
+      # -----------------------------
+      - name: Checkout Code
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - name: SonarQube Scan
+          fetch-depth: 0  # Needed for proper Sonar analysis
+
+      # -----------------------------
+      # 2) Setup Python for your tests
+      # -----------------------------
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      # -----------------------------
+      # 3) Install dependencies (if any)
+      # -----------------------------
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt || true  # ignore if no file
+          pip install coverage
+
+      # -----------------------------
+      # 4) Run unit tests
+      # -----------------------------
+      - name: Run Unit Tests
+        run: |
+          coverage run -m unittest discover
+          coverage xml
+
+      # -----------------------------
+      # 5) SonarCloud Scan
+      # -----------------------------
+      - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
         with:
           args: >
-             -Dsonar.projectKey=navyavelicheti10_PythonScript
-             -Dsonar.organization=navyavelicheti10
-             -Dsonar.sources=.
+            -Dsonar.projectKey=navyavelicheti10_PythonScript
+            -Dsonar.organization=navyavelicheti10
+            -Dsonar.sources=.
+            -Dsonar.python.coverage.reportPaths=coverage.xml
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
