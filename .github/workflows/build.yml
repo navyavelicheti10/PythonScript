@@ -1,5 +1,11 @@
 name: Build, Test, SonarCloud & ZAP
 
+permissions:
+  contents: write
+  pull-requests: write
+  security-events: write
+  actions: write
+
 on:
   push:
     branches:
@@ -13,36 +19,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) Checkout repository
+      # 1. Checkout
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2) Setup Python
+      # 2. Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # 3) Install dependencies
+      # 3. Install Dependencies
       - name: Install Dependencies
         run: |
-          pip install coverage flask requests
+          pip install flask coverage requests
 
-      # 4) Run Unit Tests with Coverage
+      # 4. Run Unit Tests with Coverage
       - name: Run Unit Tests
         run: |
           coverage run -m unittest discover -s src -p "test_*.py"
           coverage xml
 
-      # 5) Start the Flask App in the background
+      # 5. Start Flask App on port 8000
       - name: Start Flask App
         run: |
-          nohup python src/main.py &
-          sleep 5  # wait for app to start
+          nohup python src/main.py > app.log 2>&1 &
+          sleep 5
+          echo "App started on port 8000"
 
-      # 6) SonarCloud Scan
+      # 6. SonarCloud Scan
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         with:
@@ -54,10 +61,10 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # 7) OWASP ZAP DAST Scan
+      # 7. OWASP ZAP DAST Scan
       - name: OWASP ZAP Scan
         uses: zaproxy/action-full-scan@v0.8.0
         with:
-          target: 'http://localhost:8000'
-          format: 'xml'
-          output: 'zap-report.xml'
+          target: "http://localhost:8000"
+          output: "zap-report.html"
+          format: "html"
