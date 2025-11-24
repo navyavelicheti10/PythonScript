@@ -1,4 +1,4 @@
-name: Build
+name: Build, Test, SonarCloud, DAST Scan
 
 on:
   push:
@@ -8,34 +8,49 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  sonarqube:
-    name: Unit Tests + SonarQube
+  build-and-scan:
+    name: Build + Test + SonarQube + ZAP
     runs-on: ubuntu-latest
+    services:
+      app:
+        image: python:3.10-slim
+        ports:
+          - 8000:8000
+        options: >-
+          --health-cmd "curl --fail http://localhost:8000 || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        volumes:
+          - ./:/app
+        env:
+          PYTHONPATH: /app/src
+        command: bash -c "pip install -r requirements.txt && python src/main.py"
 
     steps:
-      # Step 1: Checkout repository
+      # 1) Checkout code
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # Required for SonarQube scan
+          fetch-depth: 0
 
-      # Step 2: Setup Python
+      # 2) Setup Python (for running tests and coverage)
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # Step 3: Install dependencies
+      # 3) Install dependencies for testing
       - name: Install Dependencies
         run: |
-          pip install coverage
+          pip install coverage requests
 
-      # Step 4: Run Unit Tests with Coverage
-      - name: Run Unit Tests with Coverage
+      # 4) Run Unit Tests with Coverage
+      - name: Run Unit Tests
         run: |
           coverage run -m unittest discover -s src -p "test_*.py"
           coverage xml
 
-      # Step 5: SonarQube Scan
+      # 5) SonarQube Scan
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         with:
@@ -46,3 +61,12 @@ jobs:
             -Dsonar.python.coverage.reportPaths=coverage.xml
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      # 6) OWASP ZAP DAST Scan
+      - name: OWASP ZAP Scan
+        uses: zaproxy/action-full-scan@v0.8.0
+        with:
+          target: 'http://localhost:8000'
+          format: 'xml'
+          output: 'zap-report.xml'
+          cmd_options: '-t http://localhost:8000'
